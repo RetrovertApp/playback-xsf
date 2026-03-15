@@ -19,7 +19,7 @@ project(playback_xsf C CXX)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(PlaybackPlugin)
 
-find_package(ZLIB REQUIRED)
+add_subdirectory(external/zlib)
 
 # =====================================================================================
 # psflib - PSF container parser (common to all xSF formats)
