@@ -1,7 +1,7 @@
 --- a/Core/yam.c
 +++ b/Core/yam.c
 @@ -24,7 +24,11 @@
-
+ 
  #ifndef _WIN32
  #define __cdecl
 +#if defined(__i386__) || defined(__x86_64__)
@@ -10,5 +10,5 @@
 +#define __fastcall
 +#endif
  #endif
-
+ 
  /* No dynarec for x86_64 yet */
