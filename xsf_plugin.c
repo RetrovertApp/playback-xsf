@@ -781,27 +781,49 @@ static void xsf_plugin_static_init(const RVService* service_api) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// Per-channel scope data retrieval. Currently only PSF (highly_experimental) supports scope capture.
-// Other emulators gracefully return 0.
+// Scope-only visualization. Only the PSF (highly_experimental) emulator exposes per-voice
+// PSX SPU scope; the other xSF formats report caps = 0 and the scope getters return 0.
 
-static uint32_t xsf_get_scope_data(void* user_data, int channel, float* buffer, uint32_t num_samples) {
+static bool xsf_get_structure(void* user_data, RVVizInfo* out) {
     XsfReplayerData* data = (XsfReplayerData*)user_data;
-    if (data == nullptr || data->emu_state == nullptr || buffer == nullptr) {
+    if (data == nullptr || out == nullptr) {
+        return false;
+    }
+
+    out->scroll_mode = RVScrollMode_Synchronized;
+    out->pattern_channel_count = 0;
+    out->column_count = 0;
+
+    // Only the PSF (PSX SPU) emulator exposes per-voice scope; other xSF formats have none.
+    int total = 0;
+    if (data->emulator == &s_psf_emulator && data->emu_state != nullptr) {
+        total = xsf_psf_get_scope_channel_count(data->emu_state);
+    }
+    if (total <= 0) {
+        out->caps = 0;
+        out->scope_channel_count = 0;
+        return true;
+    }
+
+    out->caps = RVVizCaps_Scope;
+    out->scope_channel_count = (uint32_t)total;
+    return true;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static uint32_t xsf_get_scope_samples(void* user_data, int32_t channel, float* out, uint32_t cap) {
+    XsfReplayerData* data = (XsfReplayerData*)user_data;
+    if (data == nullptr || data->emu_state == nullptr || out == nullptr || !data->scope_enabled) {
         return 0;
     }
 
-    // Only PSF emulator supports scope capture
+    // Only PSF emulator supports scope capture.
     if (data->emulator != &s_psf_emulator) {
         return 0;
     }
 
-    // Auto-enable scope on first request
-    if (!data->scope_enabled) {
-        xsf_psf_enable_scope_capture(data->emu_state, 1);
-        data->scope_enabled = 1;
-    }
-
-    return xsf_psf_get_scope_data(data->emu_state, channel, buffer, num_samples);
+    return xsf_psf_get_scope_data(data->emu_state, channel, out, cap);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -813,31 +835,46 @@ static void xsf_plugin_static_destroy(void) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static uint32_t xsf_get_scope_channel_names(void* user_data, const char** names, uint32_t max_channels) {
+static uint32_t xsf_get_scope_channels(void* user_data, RVChannelDesc* out, uint32_t cap) {
     XsfReplayerData* data = (XsfReplayerData*)user_data;
-    if (data == nullptr || data->emu_state == nullptr)
+    if (data == nullptr || data->emu_state == nullptr || out == nullptr)
         return 0;
 
-    // Only PSF emulator supports scope capture
+    // Only PSF emulator supports scope capture.
     if (data->emulator != &s_psf_emulator) {
         return 0;
     }
 
-    static char s_name_bufs[48][16];
     int total = xsf_psf_get_scope_channel_count(data->emu_state);
     if (total <= 0)
         return 0;
 
     uint32_t count = (uint32_t)total;
-    if (count > 48)
-        count = 48;
-    if (count > max_channels)
-        count = max_channels;
+    if (count > cap)
+        count = cap;
     for (uint32_t i = 0; i < count; i++) {
-        snprintf(s_name_bufs[i], sizeof(s_name_bufs[i]), "SPU %u", i + 1);
-        names[i] = s_name_bufs[i];
+        memset(out[i].name, 0, sizeof(out[i].name));
+        snprintf((char*)out[i].name, sizeof(out[i].name), "SPU %u", i + 1);
+        out[i].scope_width = 0;
     }
     return count;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static void xsf_set_scope_enabled(void* user_data, bool on) {
+    XsfReplayerData* data = (XsfReplayerData*)user_data;
+    if (data == nullptr || data->emu_state == nullptr) {
+        return;
+    }
+
+    // Only PSF emulator supports scope capture.
+    if (data->emulator != &s_psf_emulator) {
+        return;
+    }
+
+    xsf_psf_enable_scope_capture(data->emu_state, on ? 1 : 0);
+    data->scope_enabled = on ? 1 : 0;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -859,12 +896,19 @@ static RVPlaybackPlugin g_xsf_plugin = {
     xsf_plugin_metadata,
     xsf_plugin_static_init,
     nullptr, // settings_updated
-    nullptr, // get_tracker_info
-    nullptr, // get_pattern_cell
-    nullptr, // get_pattern_num_rows
-    xsf_get_scope_data,
     xsf_plugin_static_destroy,
-    xsf_get_scope_channel_names,
+
+    // Visualization: scope-only on PSF (PSX SPU voices); other xSF formats report caps = 0.
+    xsf_get_structure,
+    nullptr, // get_columns
+    nullptr, // get_pattern_channels
+    xsf_get_scope_channels,
+    nullptr, // get_position
+    nullptr, // get_channel_rows
+    nullptr, // get_cells
+    xsf_set_scope_enabled,
+    xsf_get_scope_samples,
+    nullptr, // get_vu
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
