@@ -1,0 +1,12 @@
+--- a/rsp_hle/plugin.c
++++ b/rsp_hle/plugin.c
+@@ -120,8 +120,8 @@ void HleProcessRdpList(void* user_defined)
+ 
+ void HleShowCFB(void* user_defined)
+ {
+     rsp_lle_run_task((usf_state_t *)user_defined);
+-    return 0;
++    return;
+ }
+ 
+ int HleForwardTask(void* user_defined)

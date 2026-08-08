@@ -106,7 +106,7 @@ download_library(
     FILENAME "lazyusf2-421f00bcaa1988b8e1825e91780129f24fbd1aa0.tar.bz2"
     HASH "b4ff5df45572e2c5ac5ecc98a5421701330a655b9971e5c012fe9f42bd12c51f"
     EXTRACT_DIR "lazyusf2-421f00bcaa1988b8e1825e91780129f24fbd1aa0"
-    PATCHES patches/lazyusf2-control87-x64.patch
+    PATCHES patches/lazyusf2-control87-x64.patch patches/lazyusf2-void-return.patch
 )
 
 file(GLOB USF_SOURCES
