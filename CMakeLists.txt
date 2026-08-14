@@ -176,6 +176,9 @@ file(GLOB HT_SOURCES
     ${highly_theoretical_SOURCE_DIR}/Core/*.c
     ${highly_theoretical_SOURCE_DIR}/Core/c68k/*.c
 )
+# gen68k is a standalone build-time code generator with its own main() and
+# file I/O. The generated emulator sources are already present in the archive.
+list(FILTER HT_SOURCES EXCLUDE REGEX "/gen68k\\.c$")
 add_library(ht_static STATIC ${HT_SOURCES})
 target_include_directories(ht_static PUBLIC
     ${highly_theoretical_SOURCE_DIR}/Core
