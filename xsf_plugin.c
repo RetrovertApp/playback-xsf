@@ -585,7 +585,8 @@ static RVReadInfo xsf_plugin_read_data(void* user_data, RVReadData dest) {
     uint32_t native_rate = (uint32_t)data->sample_rate;
     RVAudioFormat format = { RVAudioStreamFormat_S16, 2, native_rate };
 
-    uint32_t max_frames = dest.channels_output_max_bytes_size / (sizeof(int16_t) * 2);
+    uint32_t capacity_frames = dest.channels_output_max_bytes_size / (sizeof(int16_t) * 2);
+    uint32_t max_frames = dest.info.frame_count < capacity_frames ? dest.info.frame_count : capacity_frames;
 
     int rendered = data->emulator->render(data->emu_state, (int16_t*)dest.channels_output, (int)max_frames);
     if (rendered <= 0) {
