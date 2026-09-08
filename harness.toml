@@ -1,0 +1,9 @@
+[plugin]
+name = "xsf"
+
+[data]
+entries = []
+
+[[fixtures]]
+file = "fixtures/retrovert_selftest.gsf"
+sha256 = "fd2c7c891faa8b5f256790247cc31e62cb736292e2bfd8001504c33fe873260b"

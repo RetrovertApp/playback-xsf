@@ -316,10 +316,10 @@ target_link_libraries(xsf_playback PRIVATE
     ZLIB::ZLIB
 )
 
-# C++ libraries (vio2sf, viogsf, snsf9x) need stdc++ on Unix
-if(UNIX)
-    target_link_libraries(xsf_playback PRIVATE stdc++)
-endif()
+# The C++ libraries (vio2sf, viogsf, snsf9x) bring in the C++ runtime through
+# the target's own .cpp sources, so it is not named here: an explicit -lstdc++
+# defeats the harness's -static-libstdc++ and leaves the artifact DT_NEEDing
+# the shared libstdc++, which the binary audit rejects.
 
 target_compile_options(xsf_playback PRIVATE
     -Wno-unused-parameter
